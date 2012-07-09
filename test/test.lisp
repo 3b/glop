@@ -393,6 +393,10 @@
   (declare (ignore window event))
   )
 
+(defmethod glop:on-event ((window xi2-window) (event glop::extended-mouse-motion-event))
+  (declare (ignore window event))
+  )
+
 (defmethod glop:on-event ((window xi2-window) (event glop:resize-event))
   (declare (ignore window))
    (gl:viewport 0 0 (glop:width event) (glop:height event))
@@ -404,8 +408,7 @@
      (continue () :report "Continue"  )))
 
 (defun test-xinput-2 ()
-  (let ((win (glop:create-window "Glop test window" 800 600
-                                 :win-class 'xi2-window)))
+  (glop:with-window (win "Glop test window" 800 600 :win-class 'xi2-window)
     (format t "~&Created window: ~S~%" win)
     (format t "XInput-p : ~s~%"
             (multiple-value-list
@@ -437,8 +440,6 @@
            (gl:clear :color-buffer)
            (gl:flush)
            (glop:swap-buffers win)))
-    (format t "destroy window~%")
-    (glop:destroy-window win)
     (format t "done~%")))
 
 #++
