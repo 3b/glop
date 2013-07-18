@@ -179,10 +179,10 @@
 
 (defcunion xi-any-hierarchy-change-info
   (type :int)
-  (add xi-add-master-info)
-  (remove xi-remove-master-info)
-  (attach xi-attach-slave-info)
-  (detach xi-detach-slave-info))
+  (add (:struct xi-add-master-info))
+  (remove (:struct xi-remove-master-info))
+  (attach (:struct xi-attach-slave-info))
+  (detach (:struct xi-detach-slave-info)))
 
 (defcstruct xi-modifier-state
   (base :int)
@@ -191,7 +191,7 @@
   (effective :int))
 
 ;;typedef XIModifierState XIGroupState;
-(defctype xi-group-state xi-modifier-state)
+(defctype xi-group-state (:struct xi-modifier-state))
 
 (defcstruct xi-button-state
   (mask-len :int)
@@ -222,7 +222,7 @@
   (source-id :int)
   (num-buttons :int)
   (labels (:pointer x-atom))
-  (state xi-button-state))
+  (state (:struct xi-button-state)))
 
 (defclass xi-button-class-info (xi-any-class-info)
   ((labels :initarg :labels :reader button-labels)
@@ -258,11 +258,12 @@
    (mode :initarg :mode :reader valuator-mode)))
 
 (defun make-class-info (pointer display)
-  (with-foreign-slots ((type source-id) pointer %xi-any-class-info)
-    (case (cffi:foreign-enum-keyword 'xi-device-classes type :errorp nil)
+  (with-foreign-slots ((type source-id) pointer (:struct %xi-any-class-info))
+    (case (cffi:foreign-enum-keyword 'xi-device-classes type
+                                     :errorp nil)
       (:xi-button-class
        (with-foreign-slots ((num-buttons labels state)
-                            pointer %xi-button-class-info)
+                            pointer (:struct %xi-button-class-info))
          (list 'xi-button-class-info
                         :type type
                         :source-id source-id
@@ -276,7 +277,7 @@
                         :state state)))
       (:xi-key-class
        (with-foreign-slots ((num-keycodes keycodes state)
-                            pointer %xi-key-class-info)
+                            pointer (:struct %xi-key-class-info))
          (list 'xi-key-class-info
                         :type type
                         :source-id source-id
@@ -284,7 +285,7 @@
                                    collect (mem-aref keycodes :int i)))))
       (:xi-valuator-class
        (with-foreign-slots ((number label min max value resolution mode)
-                            pointer %xi-valuator-class-info)
+                            pointer (:struct %xi-valuator-class-info))
          (list 'xi-valuator-class-info
                         :type type
                         :source-id source-id
@@ -305,7 +306,7 @@
   (attachment :int)
   (enabled :boolean)
   (num-classes :int)
-  (classes (:pointer (:pointer %xi-any-class-info))))
+  (classes (:pointer (:pointer (:struct %xi-any-class-info)))))
 
 (defclass xi-device-info ()
   ((device-id :initarg :device-id :reader device-id)
@@ -317,7 +318,7 @@
 
 (defun make-xi-device-info (pointer display)
   (with-foreign-slots ((device-id name use attachment enabled num-classes
-                                  classes) pointer %xi-device-info)
+                                  classes) pointer (:struct %xi-device-info))
     (list :device-id device-id :name name :use use :attachment attachment
           :enabled enabled
           :classes (loop for i below num-classes
@@ -355,7 +356,7 @@
   (time x-time)
   (flags #++ :int xi-hierarchy-flag)
   (num-info :int)
-  (info (:pointer xi-hierarchy-info)))
+  (info (:pointer (:struct xi-hierarchy-info))))
 
 (defcstruct xi-device-changed-event
   (type :int)
@@ -369,7 +370,7 @@
   (source-id :int)
   (reason :int)
   (num-classes :int)
-  (classes (:pointer (:pointer %xi-any-class-info))))
+  (classes (:pointer (:pointer (:struct %xi-any-class-info)))))
 
 (defcstruct xi-device-event
   (type :int)
@@ -390,10 +391,10 @@
   (x :double)
   (y :double)
   (flags :int)
-  (buttons xi-button-state)
-  (valuators xi-valuator-state)
-  (mods xi-modifier-state)
-  (group xi-modifier-state #++ xi-group-state))
+  (buttons (:struct xi-button-state))
+  (valuators (:struct xi-valuator-state))
+  (mods (:struct xi-modifier-state))
+  (group (:struct xi-modifier-state) #++ xi-group-state))
 
 (defcstruct xi-raw-event
   (type :int)
@@ -407,7 +408,7 @@
   (source-id :int)
   (detail :int)
   (fags :int)
-  (valuators xi-valuator-state)
+  (valuators (:struct xi-valuator-state))
   (raw-values (:pointer :double)))
 
 (defcstruct xi-enter-event
@@ -431,16 +432,16 @@
   (node :int)
   (focus :boolean)
   (same-screen :boolean)
-  (buttons xi-button-state)
-  (mods xi-modifier-state)
+  (buttons (:struct xi-button-state))
+  (mods (:struct xi-modifier-state))
   (group xi-group-state))
 
 ;; typedef XIEnterEvent XILeaveEvent;
 ;; typedef XIEnterEvent XIFocusInEvent;
 ;; typedef XIEnterEvent XIFocusOutEvent;
-(defctype xi-leave-event xi-enter-event)
-(defctype xi-focus-in-event xi-enter-event)
-(defctype xi-focus-out-event xi-enter-event)
+(defctype xi-leave-event (:struct xi-enter-event))
+(defctype xi-focus-in-event (:struct xi-enter-event))
+(defctype xi-focus-out-event (:struct xi-enter-event))
 
 
 (defcstruct xi-property-event
@@ -465,8 +466,8 @@
   (root-y (:pointer :double))
   (win-x (:pointer :double))
   (win-y (:pointer :double))
-  (buttons (:pointer xi-button-state))
-  (mods (:pointer xi-modifier-state))
+  (buttons (:pointer (:struct xi-button-state)))
+  (mods (:pointer (:struct xi-modifier-state)))
   (group (:pointer xi-group-state)))
 
 
@@ -495,7 +496,7 @@
 
 (defcfun ("XIChangeHierarchy" %xi-change-hierarchy) x-status
   (display-ptr :pointer)
-  (changes (:pointer xi-any-hierarchy-change-info))
+  (changes (:pointer (:union xi-any-hierarchy-change-info)))
   (num-changes :int))
 
 (defcfun ("XISetClientPointer" xi-set-client-pointer) x-status
@@ -512,7 +513,7 @@
 (defcfun ("XISelectEvents" %xi-select-events) x-status
   (display-ptr :pointer)
   (window window)
-  (masks (:pointer xi-event-mask))
+  (masks (:pointer (:struct xi-event-mask)))
   (num-masks :int))
 
 ;; fixme: use the enums instead of these constants
@@ -524,19 +525,19 @@
     (alexandria:once-only (device-id events)
       `(let* ((,mask-val (foreign-bitfield-value 'xi-event-masks ,events))
              (,octets (1+ (floor (integer-length ,mask-val) 8))))
-        (with-foreign-objects ((,var 'xi-event-mask)
+        (with-foreign-objects ((,var '(:struct xi-event-mask))
                                (,mask-octets :unsigned-char ,octets))
           (loop for ,i below ,octets
              do (setf (mem-aref ,mask-octets :unsigned-char ,i)
                       ;; fixme: verify byte-order here
                       (ldb (byte 8 (* ,i 8)) ,mask-val)))
-          (setf (foreign-slot-value ,var 'xi-event-mask 'device-id)
+          (setf (foreign-slot-value ,var '(:struct xi-event-mask) 'device-id)
                 (cond ((numberp ,device-id) ,device-id)
                       ((eq ,device-id :all-devices) +xi-all-devices+)
                       ((eq ,device-id :all-master-devices) +xi-all-master-devices+)
                       (t (error "unknown device id ~s, expected number or :all-devices or :all-master-devices" ,device-id)))
-                (foreign-slot-value ,var 'xi-event-mask 'mask) ,mask-octets
-                (foreign-slot-value ,var 'xi-event-mask 'mask-len) ,octets)
+                (foreign-slot-value ,var '(:struct xi-event-mask) 'mask) ,mask-octets
+                (foreign-slot-value ,var '(:struct xi-event-mask) 'mask-len) ,octets)
           ,@body)))))
 
 (defun xi-select-events (display window device-id &rest events)
@@ -548,7 +549,8 @@
       ;; separate mask for each device?
     (%xi-select-events display window event-mask 1)))
 
-(defcfun ("XIGetSelectedEvents" %xi-get-selected-events) (:pointer xi-event-mask)
+(defcfun ("XIGetSelectedEvents" %xi-get-selected-events)
+    (:pointer (:struct xi-event-mask))
   (display-ptr :pointer)
   (win window)
   (num-masks-return (:pointer :int)))
@@ -575,20 +577,20 @@
       ;; support for xinput1
       (values nil nil nil)))
 
-(defcfun ("XIQueryDevice" %xi-query-device) (:pointer %xi-device-info)
+(defcfun ("XIQueryDevice" %xi-query-device) (:pointer (:struct %xi-device-info))
   (display-ptr :pointer)
   (device-id :int)
   (num-devices-retuen (:pointer :int)))
 
 (defcfun ("XIFreeDeviceInfo" xi-free-device-info) :void
-  (info (:pointer %xi-device-info)))
+  (info (:pointer (:struct %xi-device-info))))
 
 (defun xi-query-device (display device-id)
   (with-foreign-object (count :int)
     (let ((devices (%xi-query-device display device-id count)))
       (prog1
           (loop for i below (mem-aref count :int)
-             for device =  (mem-aref devices '%xi-device-info i)
+             for device =  (mem-aref devices '(:struct %xi-device-info) i)
              for info = (make-xi-device-info device display)
              collect info
              do (format t "device ~a~% =~s~%" i info))
@@ -614,7 +616,7 @@
   (grab-mode grab-mode)
   (paired-device-mode grab-mode)
   (owner-events :boolean)
-  (mask (:pointer xi-event-mask)))
+  (mask (:pointer (:struct xi-event-mask))))
 
 (defcfun ("XIUngrabDevice" xi-ungrab-device) x-status
   (display-ptr :pointer)
@@ -630,9 +632,9 @@
   (grab-mode :int)
   (paired-device-mode :int)
   (owner-events :int) ;; should this be boolean like XIGrabDevice?
-  (mask (:pointer xi-event-mask))
+  (mask (:pointer (:struct xi-event-mask)))
   (num-modifiers :int)
-  (modifiers-inout (:pointer xi-grab-modifiers)))
+  (modifiers-inout (:pointer (:struct xi-grab-modifiers))))
 
 (defcfun ("XIGrabKeycode" %xi-grab-keycode) :int
   (display-ptr :pointer)
@@ -642,9 +644,9 @@
   (grab-mode :int)
   (paired-device-mode :int)
   (owner-events :int) ;; should this be boolean like XIGrabDevice?
-  (mask (:pointer xi-event-mask))
+  (mask (:pointer (:struct xi-event-mask)))
   (num-modifiers :int)
-  (modifiers-inout (:pointer xi-grab-modifiers)))
+  (modifiers-inout (:pointer (:struct xi-grab-modifiers))))
 
 
 (defcfun ("XIGrabEnter" %xi-grab-enter) :int
@@ -655,9 +657,9 @@
   (grab-mode grab-mode)
   (paired-device-mode grab-mode)
   (owner-events :boolean)
-  (mask (:pointer xi-event-mask))
+  (mask (:pointer (:struct xi-event-mask)))
   (num-modifiers :int)
-  (modifiers-inout (:pointer xi-grab-modifiers)))
+  (modifiers-inout (:pointer (:struct xi-grab-modifiers))))
 
 
 (defcfun ("XIGrabFocusIn" %xi-grab-focus-in) :int
@@ -667,9 +669,9 @@
   (grab-mode grab-mode)
   (paired-device-mode grab-mode)
   (owner-events :boolean)
-  (mask (:pointer xi-event-mask))
+  (mask (:pointer (:struct xi-event-mask)))
   (num-modifiers :int)
-  (modifiers-inout (:pointer xi-grab-modifiers)))
+  (modifiers-inout (:pointer (:struct xi-grab-modifiers))))
 
 (defcfun ("XIUngrabButton" %xi-ungrab-button) x-status
   (display-ptr :pointer)
@@ -677,7 +679,7 @@
   (button :int)
   (grab-window window)
   (num-modifiers :int)
-  (modifiers (:pointer xi-grab-modifiers)))
+  (modifiers (:pointer (:struct xi-grab-modifiers))))
 
 (defcfun ("XIUngrabKeycode" %xi-ungrab-keycode) x-status
   (display-ptr :pointer)
@@ -685,21 +687,21 @@
   (keycode :int)
   (grab-window window)
   (num-modifiers :int)
-  (modifiers (:pointer xi-grab-modifiers)))
+  (modifiers (:pointer (:struct xi-grab-modifiers))))
 
 (defcfun ("XIUngrabEnter" %xi-ungrab-enter) x-status
   (display-ptr :pointer)
   (device-id :int)
   (grab-window window)
   (num-modifiers :int)
-  (modifiers (:pointer xi-grab-modifiers)))
+  (modifiers (:pointer (:struct xi-grab-modifiers))))
 
 (defcfun ("XIUngrabFocusIn" %xi-ungrab-focus-in) x-status
   (display-ptr :pointer)
   (device-id :int)
   (grab-window window)
   (num-modifiers :int)
-  (modifiers (:pointer xi-grab-modifiers)))
+  (modifiers (:pointer (:struct xi-grab-modifiers))))
 
 (defcfun ("XIListProperties" %xi-list-properties) (:pointer x-atom)
   (display-ptr :pointer)
@@ -736,7 +738,7 @@
   (data (:pointer (:pointer :unsigned-char))))
 
 (defun parse-valuator-state (state)
-  (with-foreign-slots ((mask-len mask values) state xi-valuator-state)
+  (with-foreign-slots ((mask-len mask values) state (:struct xi-valuator-state))
     (loop with index = 0
        for i below mask-len
        append (loop for j below 8
@@ -776,7 +778,8 @@
 (defmethod %generic-event-dispatch ((extension-name (eql :x-input-2))
                                     (event (eql +xi-motion+)) data
                                     display-ptr)
-  (with-foreign-slots ((device-id source-id x y x-root y-root valuators) data xi-device-event)
+  (with-foreign-slots ((device-id source-id x y x-root y-root valuators) data
+                       (:struct xi-device-event))
     (make-instance 'glop::extended-mouse-motion-event
                    :x x :y y
                    :device device-id
@@ -789,7 +792,7 @@
                                     (event (eql +xi-button-press+)) data
                                     display-ptr)
   (with-foreign-slots ((device-id source-id x y detail valuators)
-                       data xi-device-event)
+                       data (:struct xi-device-event))
     (make-instance 'glop::extended-mouse-press-event
                    :x x :y y
                    :device device-id
@@ -800,7 +803,7 @@
                                     (event (eql +xi-button-release+)) data
                                     display-ptr)
   (with-foreign-slots ((device-id source-id x y detail valuators)
-                       data xi-device-event)
+                       data (:struct xi-device-event))
     (make-instance 'glop::extended-mouse-release-event
                    :x x :y y
                    :device device-id
@@ -812,7 +815,8 @@
 (defmethod %generic-event-dispatch ((extension-name (eql :x-input-2))
                                     (event (eql +xi-key-press+)) data
                                     display-ptr)
-  (with-foreign-slots ((device-id source-id x y detail) data xi-device-event)
+  (with-foreign-slots ((device-id source-id x y detail) data
+                       (:struct xi-device-event))
     (format t "~&key press event on device ~s/~s, key ~s (at ~s,~s)~%"
             device-id source-id detail x y)))
 
@@ -872,12 +876,13 @@
 (defmethod %generic-event-dispatch ((extension-name (eql :x-input-2))
                                     (event (eql +xi-hierarchy-changed+)) data
                                     display-ptr)
- (with-foreign-slots ((flags num-info info) data xi-hierarchy-event)
+ (with-foreign-slots ((flags num-info info) data (:struct xi-hierarchy-event))
    (format t "xinput2 hierarchy event flags=~s~% info=~s~%"
            flags
            (loop for i below num-info
-              for p = (mem-aref info 'xi-hierarchy-info i)
-              when (with-foreign-slots ((device-id attachment use enabled flags) p xi-hierarchy-info)
+              for p = (mem-aref info '(:struct xi-hierarchy-info) i)
+              when (with-foreign-slots ((device-id attachment use enabled flags)
+                                        p (:struct xi-hierarchy-info))
                      (when flags
                        (list i
                              :device-id device-id
@@ -889,8 +894,8 @@
    (let ((added nil)
          (removed nil))
      (loop for i below num-info
-        for p = (mem-aref info 'xi-hierarchy-info i)
-        do (with-foreign-slots ((device-id flags) p xi-hierarchy-info)
+        for p = (mem-aref info '(:struct xi-hierarchy-info) i)
+        do (with-foreign-slots ((device-id flags) p (:struct xi-hierarchy-info))
              (when (and flags (or (member :xi-slave-added flags)
                                   (member :xi-master-added flags)))
                (format t "added device :~% ")
