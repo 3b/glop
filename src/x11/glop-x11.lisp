@@ -102,7 +102,8 @@
                         (accum-green-size 0)
                         (accum-blue-size 0)
                         stencil-buffer
-                        (stencil-size 0))
+                        (stencil-size 0)
+                        parent)
   (without-fp-traps
       (let ((attribs (list :rgba rgba
                            :red-size red-size
@@ -140,7 +141,8 @@
                       visual-infos (glop-glx:glx-get-visual-from-fb-config display fb-config))
                 (setf visual-infos (glop-glx:glx-choose-visual display screen attribs))))
           (setf id (glop-xlib:x-create-window display
-                                              (glop-xlib:x-default-root-window display)
+                                              (or parent
+                                                  (glop-xlib:x-default-root-window display))
                                               x y width height visual-infos))
           (setf cursor (glop-xlib:x-create-null-cursor display id))
           (cffi:with-foreign-object (array :unsigned-long)
