@@ -543,6 +543,18 @@
 (defcfun ("XSetErrorHandler" x-set-error-handler) :int
   (handler :pointer))
 
+(defun init-xinput2 (display)
+  (multiple-value-bind (has-xi op ev err)
+      (glop-xlib::x-query-extension display "XInputExtension")
+    (when (and has-xi
+               (glop-xlib::xi-query-version display 2 0))
+      (setf (get-display-extension-data display op)
+            (make-instance 'extension-data
+                           'name :x-input-2
+                           'opcode op
+                           'event-base ev
+                           'error-base err)))))
+
 (defun x-open-display (&optional (display-name (null-pointer)))
   ;; fixme: only do this once (but at least once per image load, so not at toplevel)
   (x-set-error-handler (callback x-error-handler))
@@ -555,6 +567,7 @@
       (warn "duplicate display in x-open-display? need to add reference couting..."))
     (setf (gethash (pointer-address display) *display-extensions*)
           (make-hash-table :test 'eql))
+    (init-xinput2 display)
     display))
 
 (defun x-close-display (display)
