@@ -20,6 +20,7 @@
                                    (:file "xlib")
                                    (:file "xkb")
                                    (:file "xcomposite")
+                                   (:file "xinput2")
                                    (:file "glx")
                                    (:file "display-ctrl")
                                    (:file "glop-x11")))
