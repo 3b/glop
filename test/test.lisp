@@ -408,6 +408,7 @@
        (progn ,@body)
      (continue () :report "Continue"  )))
 
+#- (or darwin win32 windows)
 (defun test-xinput-2 ()
   (glop:with-window (win "Glop test window" 800 600 :win-class 'xi2-window)
     (format t "~&Created window: ~S~%" win)
