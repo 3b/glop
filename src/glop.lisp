@@ -440,6 +440,10 @@ user settings.")
 (defclass extended-mouse-release-event (extended-mouse-button-event)
   ())
 
+(defclass device-hotplug-event (event)
+  ((added :initarg :added :accessor added)
+   (removed :initarg :removed :accessor removed)))
+
 (defun push-event (window evt)
   "Push an artificial event into the event processing system.
 Note that this has no effect on the underlying window system."
