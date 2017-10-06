@@ -346,19 +346,19 @@
   :m-button
   :x-button1
   :x-button2
-  :backspace
+  (:backspace 8)
   :tab
-  :clear
+  (:clear #x0c)
   :return
-  (:shift 16)
-  (:control 17)
+  (:shift #x10)
+  :control
   :menu
   :pause
-  :capital
-  (:kana #x15)
+  :capital ;; capslock
+  (:kana #x15) ;; also hanguel/hangul
   (:junja #x17)
   (:final #x18)
-  (:hanja #x19)
+  (:hanja #x19) ;; also kanji
   (:escape #x1B)
   (:convert #x1C)
   (:no-convert #x1D)
@@ -376,7 +376,7 @@
   (:select 41)
   (:print 42)
   (:execute 43)
-  (:snapshot 44)
+  (:snapshot 44) ;; printscreen
   (:insert 45)
   (:delete 46)
   (:help 47)
@@ -462,6 +462,11 @@
   :f24
   (:numlock #x90)
   :scroll
+  :oem-specific-0
+  :oem-specific-1
+  :oem-specific-2
+  :oem-specific-3
+  :oem-specific-4
   (:shift-l #xA0)
   :shift-r
   :control-l
@@ -486,7 +491,7 @@
   :maunch-media-select
   :launch-app1
   :launch-app2
-  :oem1
+  (:oem1 #xba) ;; varies, ";:" on us
   :oem-plus
   :oem-comma
   :oem-minus
