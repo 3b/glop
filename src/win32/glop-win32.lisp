@@ -99,7 +99,7 @@
                                                 x y width height (cffi:null-pointer) (cffi:null-pointer)
                                                 (win32-window-module-handle win) (cffi:null-pointer))))
       (unless wnd
-        (error "Can't create window (error ~S)~%" (glop-win32:get-last-error)))
+        (error "Can't create window (error ~S)~%" (glop-win32::get-last-error-string)))
       (setf (win32-window-id win) wnd)
       (setf (gethash (cffi:pointer-address wnd) glop-win32::*window-id-mapping*)
             win)

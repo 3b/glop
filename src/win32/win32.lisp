@@ -779,7 +779,7 @@
             bottom (+ y height))
       (when (zerop
                (%adjust-window-rect-ex rect style (if menu 1 0) ex-style))
-        (error "adjust-window-rect-ex failed ~s" (get-last-error)))
+        (error "adjust-window-rect-ex failed ~s" (get-last-error-string)))
       (values left top
               (- right left)
               (- bottom top)))))
@@ -1061,7 +1061,7 @@
             menu-name (null-pointer)
             class-name name))
 	  (when (zerop (%register-class class))
-		(format t "Error registering class ~S: ~S~%" name (get-last-error)))))
+		(format t "Error registering class ~S: ~S~%" name (get-last-error-string)))))
 
 (defcfun ("SetWindowTextA" set-window-text) bool
   (wnd hwnd) (title :string))
@@ -1094,6 +1094,31 @@
   (module-name :string))
 
 (defcfun ("GetLastError" get-last-error) :int32)
+
+(cffi:defcfun (%format-message "FormatMessageW") dword
+  (flags dword) ;; fixme: add bitfield def? (low byte is max width though)
+  (source :pointer)
+  (message-id dword)
+  (language-id dword)
+  (buffer :pointer)
+  (size dword)
+  (argumnents :pointer))
+
+(defun get-last-error-string ()
+  (let ((e (get-last-error))
+        (bufsize (1- (expt 2 15)))) ;; max 64k bytes
+    (with-foreign-object (buf :unsigned-short bufsize)
+      (let ((c (%format-message #x1000 ;; format-message-from-system, no width
+                                (null-pointer)
+                                e
+                                0 ;; default language
+                                buf bufsize
+                                (null-pointer))))
+        (if (zerop c)
+            (format nil "failed to get error string for error ~s? (~s)" e c)
+            (string-trim '(#\space #\newline #\return #\tab)
+                         (foreign-string-to-lisp buf :encoding :utf-16le)))))))
+
 
 (defcfun ("GetVersion" %get-version) dword)
 
