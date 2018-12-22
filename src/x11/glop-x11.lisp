@@ -143,6 +143,7 @@
             win
           (setf display (glop-xlib:x-open-display))
           (setf screen (glop-xlib:default-screen display))
+          (window-created-hook win)
           (choose-visual win attribs)
           (setf id (glop-xlib:x-create-window display
                                               (or parent

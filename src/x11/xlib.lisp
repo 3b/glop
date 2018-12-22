@@ -392,9 +392,21 @@
   (atom-name :string)
   (only-if-exists :boolean))
 
+(defbitfield visual-info-mask
+  (:id 1)
+  :screen
+  :depth
+  :class
+  :red
+  :green
+  :blue
+  :colormap-size
+  :bits-per-rgb
+  (:all #x1ff))
+
 (defcfun ("XGetVisualInfo" get-visual-info) :pointer
   (display-ptr :pointer)
-  (vinfo-mask :int)
+  (vinfo-mask visual-info-mask)
   (vinfo-template :pointer)
   (nitems-returned :pointer))
 
@@ -584,7 +596,7 @@
                   border-pixel 0)
             (%x-create-window dpy parent x y  width height 0
                               depth :input-output visual
-                              '(:cw-colormap :cw-event-mask)
+                              '(:cw-colormap :cw-event-mask :cw-border-pixel)
                               win-attrs)))))))
 
 (defcfun ("XDestroyWindow" x-destroy-window) :int
@@ -611,6 +623,10 @@
 
 (defcfun ("XSync" x-sync) :int
   (display-ptr :pointer) (discard :boolean))
+
+(defcfun ("XSynchronize" x-synchronize) :int
+  (display-ptr :pointer) (on-off :boolean))
+
 
 (defcfun ("XNextEvent" %x-next-event) :int
   (display-ptr :pointer) (evt (:pointer (:union x-event))))

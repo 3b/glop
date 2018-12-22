@@ -81,7 +81,7 @@
 
 (defun supported-modes (dpy screen)
   (with-foreign-objects ((count :int) (gl :int) (dummy '(:struct visual-info)))
-    (let ((rtn-list (get-visual-info dpy 0 dummy count))
+    (let ((rtn-list (get-visual-info dpy nil dummy count))
           (sc (xrr-get-screen-info dpy (root-window dpy screen)))
           (depth-list nil)
           (resolution-list nil))
