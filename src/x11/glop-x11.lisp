@@ -88,14 +88,16 @@
 (defmethod choose-visual ((win x11-window) attribs)
   (with-accessors ((display x11-window-display)
                    (fb-config x11-window-fb-config)
-                   (visual-infos x11-window-visual-infos)))
-  (multiple-value-bind (glx-major glx-minor)
-      (glop-glx:glx-get-version display)
-    (if (and (>= glx-major 1)
-             (>= glx-minor 3))
-        (setf fb-config (glop-glx:glx-choose-fb-config display screen attribs)
-              visual-infos (glop-glx:glx-get-visual-from-fb-config display fb-config))
-        (setf visual-infos (glop-glx:glx-choose-visual display screen attribs)))))
+                   (screen x11-window-screen)
+                   (visual-infos x11-window-visual-infos))
+      win
+    (multiple-value-bind (glx-major glx-minor)
+        (glop-glx:glx-get-version display)
+      (if (and (>= glx-major 1)
+               (>= glx-minor 3))
+          (setf fb-config (glop-glx:glx-choose-fb-config display screen attribs)
+                visual-infos (glop-glx:glx-get-visual-from-fb-config display fb-config))
+          (setf visual-infos (glop-glx:glx-choose-visual display screen attribs))))))
 
 (defmethod open-window ((win x11-window) title width height &key (x 0) (y 0)
                         (rgba t)
@@ -141,7 +143,7 @@
             win
           (setf display (glop-xlib:x-open-display))
           (setf screen (glop-xlib:default-screen display))
-          (chooose-visual win)
+          (choose-visual win attribs)
           (setf id (glop-xlib:x-create-window display
                                               (or parent
                                                   (glop-xlib:x-default-root-window display))
