@@ -62,6 +62,11 @@
 (defmethod detach-gl-context ((ctx wgl-context))
   (glop-wgl::wgl-make-current (cffi:null-pointer) (cffi:null-pointer)))
 
+(defmethod choose-pixel-format (win &rest r &key &allow-other-keys)
+  (apply #'glop-win32:choose-pixel-format (win32-window-dc win) r))
+
+(defmethod window-created-hook (win))
+
 (defmethod open-window ((win win32-window) title width height &key (x 0) (y 0)
                                                                 (rgba t)
                                                                 (double-buffer t)
@@ -108,8 +113,9 @@
 
   (setf (win32-window-dc win)
         (glop-win32:get-dc (win32-window-id win)))
-  (setf (win32-window-pixel-format win) (glop-win32:choose-pixel-format
-                                         (win32-window-dc win)
+  (window-created-hook win)
+  (setf (win32-window-pixel-format win) (choose-pixel-format
+                                         win
                                          :rgba rgba
                                          :double-buffer double-buffer
                                          :stereo stereo
@@ -186,7 +192,7 @@
         (setf glop-win32:%event% nil)
         evt))
 
-(defun %swap-interval (win interval)
+(defmethod %swap-interval ((win win32-window) interval)
   ;; don't check/modify win32-window-swap-interval since we
   ;; might be emulating it with dwm
   (unless (swap-interval-tear win)

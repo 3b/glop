@@ -81,6 +81,9 @@
    (previous-video-mode :accessor window-previous-video-mode
                         :initform nil)))
 
+(defclass egl-window (egl-context-mixin window)
+  ())
+
 (defun %update-geometry (win x y width height)
   (setf (slot-value win 'x) x
         (slot-value win 'y) y
