@@ -137,6 +137,16 @@
                          :render-buffer (if (egl-double-buffer w)
                                             :back-buffer
                                             :single-buffer)))
+  (format t "created surface ~s:~%~s~%" (egl-surface w)
+          (loop for i in '(:width :height
+                           :horizontal-resolution :vertical-resolution
+                           :render-buffer :swap-behavior)
+                collect i
+                collect (egl:query-surface (egl-display w) (egl-surface w) i)))
+  (format t "double-buffer = ~s~% render buffer = ~s~%"
+          (egl-double-buffer w)
+          (egl:query-surface (egl-display w) (egl-surface w)
+                             :render-buffer))
   (setf (window-gl-context w)
         (make-egl-context
          :win nil
@@ -164,6 +174,7 @@
 
 (defmethod destroy-gl-context ((ctx egl-context))
   (detach-gl-context ctx)
+  (format t "destroy egl context ~s~%" ctx)
   (egl:destroy-context (egl-context-dpy ctx) (egl-context-ctx ctx)))
 
 (defmethod attach-gl-context ((w egl-context-mixin) (ctx egl-context))
@@ -187,6 +198,16 @@
                          :no-surface
                          :no-context)))))
 
+(defun remake-surface (w)
+  (destroy-gl-context (window-gl-context w))
+  (egl:destroy-surface (egl-display w) (shiftf (egl-surface w) nil))
+  (create-gl-context w)
+  )
+
+(defmethod close-window :before ((w egl-context-mixin))
+  (egl:destroy-surface (egl-display w) (shiftf (egl-surface w) nil))
+  (egl:terminate (shiftf (egl-display w) nil)))
+
 (defmethod %swap-interval ((w egl-context-mixin) interval)
   (egl:swap-interval (egl-display w) interval))
 
@@ -206,7 +227,10 @@
 
 #++
 (locally (declare (notinline gl:get-string))
-  (glop:with-window (w "egl?" 256 256 :win-class 'glop::egl-window
+  (glop:with-window (w "egl?"
+                       ;768 512
+                       800 480
+                       :win-class 'glop::egl-window
                        :alpha-size 0
                       )
    (format t "got gles version ~s~%"

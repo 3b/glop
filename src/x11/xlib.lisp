@@ -584,7 +584,7 @@
     (with-foreign-slots ((visual-id visual depth) visual-infos (:struct visual-info))
       (let ((colormap (x-create-color-map dpy root-win visual :alloc-none)))
         (with-foreign-object (win-attrs '(:struct set-window-attributes))
-          (with-foreign-slots ((cmap event-mask border-pixel) win-attrs (:struct set-window-attributes))
+          (with-foreign-slots ((cmap event-mask border-pixel override-redirect) win-attrs (:struct set-window-attributes))
             (setf cmap colormap
                   event-mask (foreign-bitfield-value 'x-event-mask-flags
                                 '(:exposure-mask
@@ -593,10 +593,12 @@
                                   :structure-notify-mask
                                   :visibility-change-mask
                                   :pointer-motion-mask))
-                  border-pixel 0)
+                  border-pixel 0
+                  override-redirect nil)
             (%x-create-window dpy parent x y  width height 0
                               depth :input-output visual
-                              '(:cw-colormap :cw-event-mask :cw-border-pixel)
+                              '(:cw-colormap :cw-event-mask :cw-border-pixel
+                                :cw-override-redirect)
                               win-attrs)))))))
 
 (defcfun ("XDestroyWindow" x-destroy-window) :int
@@ -663,6 +665,8 @@
   (defun process-event (win dpy evt)
     "Process an X11 event into a GLOP event."
     (with-foreign-slots ((type) evt (:union x-event))
+      #+++(format t "event ~s~%"
+              (foreign-enum-keyword 'x-event-name type :errorp nil))
       (case (foreign-enum-keyword 'x-event-name type :errorp nil)
         (:key-press
          (with-foreign-slots ((keycode) evt (:struct x-key-event))
@@ -720,7 +724,7 @@
              glop-evt)))
         (:expose
          (with-foreign-slots ((display-ptr win) evt (:struct x-expose-event))
-           (multiple-value-bind (root x y width height border-width depth)
+           (destructuring-bind (&key root x y width height border-width depth)
                (x-get-geometry display-ptr win)
              (declare (ignorable x y root border-width depth))
              (make-instance 'glop:expose-event
